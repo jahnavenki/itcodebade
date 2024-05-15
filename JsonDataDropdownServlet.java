@@ -217,3 +217,4 @@ public class JsonDataDropdownServlet extends SlingSafeMethodsServlet {
         </content>
     </items>
 </jcr:root>
+	/apps/cfs-winged/global/cards/fundsDialog/items/toggle/items/marketing/dropdown.json
