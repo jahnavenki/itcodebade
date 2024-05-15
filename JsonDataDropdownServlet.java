@@ -31,9 +31,9 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 @Component(service = Servlet.class,
-                  property = {Constants.SERVICE_DESCRIPTION + "=Card Fund Servlet",
-                             "sling.servlet.methods=" + HttpConstants.METHOD_GET,
-                             "sling.servlet.paths="+ "/bin/jsonDataDropdown"})
+        property = {Constants.SERVICE_DESCRIPTION + "=Card Fund Servlet",
+                "sling.servlet.methods=" + HttpConstants.METHOD_GET,
+                "sling.servlet.paths="+ "/bin/jsonDataDropdown"})
 public class JsonDataDropdownServlet extends SlingSafeMethodsServlet {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(JsonDataDropdownServlet.class);
@@ -224,3 +224,5 @@ By using this servlet trying to hit external API and and storing inside aem dilo
     </items>
 </jcr:root>
 	/apps/cfs-winged/global/cards/fundsDialog/items/toggle/items/marketing/dropdown.json
+
+	java.lang.IllegalArgumentException: Illegal character in query at index 146: https://secure.colonialfirststate.com.au/fp/pricenperformance/products/funds/performance?companyCode=001&mainGroup=SF&productId=11&mintimeframe=At least 10 years&mintimeframe=At Least 3 years&mintimeframe=At least 5 years&mintimeframe=At least 7 years&mintimeframe=No minimum&category=Conservative&category=Defensive&category=Geared&category=Growth&category=High Growth&category=Moderate&category=Single sector option&asset=Alternatives&asset=Australian Property Securities&asset=Australian Share&asset=Cash and other income&asset=Fixed Interest&asset=Global Property Securities&asset=Global Share&asset=Infrastructure securities&asset=Multi-Sector&risk=1&risk=3&risk=4&risk=5&risk=6&risk=7&
