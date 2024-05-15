@@ -12,9 +12,11 @@ import org.apache.sling.api.SlingHttpServletResponse;
 import org.apache.sling.api.resource.PersistenceException;
 import org.apache.sling.api.resource.Resource;
 import org.apache.sling.api.resource.ResourceResolver;
+import org.apache.sling.api.servlets.HttpConstants;
 import org.apache.sling.api.servlets.SlingSafeMethodsServlet;
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.osgi.framework.Constants;
 import org.osgi.service.component.annotations.Component;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,11 +26,14 @@ import javax.jcr.RepositoryException;
 import javax.servlet.Servlet;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.util.HashMap;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
-@Component(service = Servlet.class, property = {"sling.servlet.paths=/cfs/jsonDataDropdown"})
+@Component(service = Servlet.class,
+                  property = {Constants.SERVICE_DESCRIPTION + "=Card Fund Servlet",
+                             "sling.servlet.methods=" + HttpConstants.METHOD_GET,
+                             "sling.servlet.paths="+ "/bin/jsonDataDropdown"})
 public class JsonDataDropdownServlet extends SlingSafeMethodsServlet {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(JsonDataDropdownServlet.class);
@@ -37,24 +42,24 @@ public class JsonDataDropdownServlet extends SlingSafeMethodsServlet {
     private static final String BASE_API_URL = "https://secure.colonialfirststate.com.au/fp/pricenperformance/products/funds/performance";
     private static final Map<String, String[]> API_PARAMETERS;
 
-	 static {
-		// Add more parameters as needed...
-		API_PARAMETERS = new LinkedHashMap<>(); // Use LinkedHashMap to preserve insertion order
-		API_PARAMETERS.put("companyCode", new String[]{"001"});
-		API_PARAMETERS.put("mainGroup", new String[]{"SF"});
-		API_PARAMETERS.put("productId", new String[]{"11"});
-		API_PARAMETERS.put("mintimeframe", new String[]{"At least 10 years", "At Least 3 years", "At least 5 years", "At least 7 years", "No minimum"});
-		// Additional parameters
-		API_PARAMETERS.put("category", new String[]{"Conservative", "Defensive", "Geared", "Growth", "High Growth", "Moderate", "Single sector option"});
-		API_PARAMETERS.put("asset", new String[]{"Alternatives", "Australian Property Securities", "Australian Share", "Cash and other income", "Fixed Interest", "Global Property Securities", "Global Share", "Infrastructure securities", "Multi-Sector"});
-		API_PARAMETERS.put("risk", new String[]{"1", "3", "4", "5", "6", "7"});
-	}
+    static {
+        // Add more parameters as needed...
+        API_PARAMETERS = new LinkedHashMap<>(); // Use LinkedHashMap to preserve insertion order
+        API_PARAMETERS.put("companyCode", new String[]{"001"});
+        API_PARAMETERS.put("mainGroup", new String[]{"SF"});
+        API_PARAMETERS.put("productId", new String[]{"11"});
+        API_PARAMETERS.put("mintimeframe", new String[]{"At least 10 years", "At Least 3 years", "At least 5 years", "At least 7 years", "No minimum"});
+        // Additional parameters
+        API_PARAMETERS.put("category", new String[]{"Conservative", "Defensive", "Geared", "Growth", "High Growth", "Moderate", "Single sector option"});
+        API_PARAMETERS.put("asset", new String[]{"Alternatives", "Australian Property Securities", "Australian Share", "Cash and other income", "Fixed Interest", "Global Property Securities", "Global Share", "Infrastructure securities", "Multi-Sector"});
+        API_PARAMETERS.put("risk", new String[]{"1", "3", "4", "5", "6", "7"});
+    }
 
     @Override
     protected void doGet(SlingHttpServletRequest request, SlingHttpServletResponse response) throws IOException {
         response.setContentType("application/json");
         PrintWriter out = response.getWriter();
-
+        LOGGER.error("Venkat.{}", out.toString());
         String jsonDataPath = getJsonDataPath(request);
         if (jsonDataPath == null) {
             LOGGER.error("JSON Data path is not provided.");
@@ -130,7 +135,8 @@ public class JsonDataDropdownServlet extends SlingSafeMethodsServlet {
         response.setCharacterEncoding("UTF-8");
         response.getWriter().write(dropdownOptions.toString());
     }
-} By using this servlet trying to hit external API and and storing inside aem dilog node but it is giving an error saying JSON data path not provided see below dilog
+}
+By using this servlet trying to hit external API and and storing inside aem dilog node but it is giving an error saying JSON data path not provided see below dilog
 <?xml version="1.0" encoding="UTF-8"?>
 <jcr:root xmlns:jcr="http://www.jcp.org/jcr/1.0" xmlns:nt="http://www.jcp.org/jcr/nt/1.0" xmlns:granite="http://www.adobe.com/jcr/granite/1.0" xmlns:sling="http://sling.apache.org/jcr/sling/1.0"
     jcr:primaryType="nt:unstructured">
