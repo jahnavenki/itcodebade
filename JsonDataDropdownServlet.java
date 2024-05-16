@@ -26,6 +26,8 @@ import javax.jcr.RepositoryException;
 import javax.servlet.Servlet;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -48,11 +50,10 @@ public class JsonDataDropdownServlet extends SlingSafeMethodsServlet {
         API_PARAMETERS.put("companyCode", new String[]{"001"});
         API_PARAMETERS.put("mainGroup", new String[]{"SF"});
         API_PARAMETERS.put("productId", new String[]{"11"});
-        API_PARAMETERS.put("mintimeframe", new String[]{"At least 10 years", "At Least 3 years", "At least 5 years", "At least 7 years", "No minimum"});
-        // Additional parameters
         API_PARAMETERS.put("category", new String[]{"Conservative", "Defensive", "Geared", "Growth", "High Growth", "Moderate", "Single sector option"});
         API_PARAMETERS.put("asset", new String[]{"Alternatives", "Australian Property Securities", "Australian Share", "Cash and other income", "Fixed Interest", "Global Property Securities", "Global Share", "Infrastructure securities", "Multi-Sector"});
         API_PARAMETERS.put("risk", new String[]{"1", "3", "4", "5", "6", "7"});
+        API_PARAMETERS.put("mintimeframe", new String[]{"At least 10 years", "At Least 3 years", "At least 5 years", "At least 7 years", "No minimum"});
     }
 
     @Override
@@ -88,7 +89,18 @@ public class JsonDataDropdownServlet extends SlingSafeMethodsServlet {
 
     private String callExternalAPI(String baseUrl, Map<String, String[]> parameters) throws IOException {
         StringBuilder apiURL = new StringBuilder(baseUrl + "?");
-
+         for (Map.Entry<String, String[]> entry : parameters.entrySet()){
+             String key = entry.getKey();
+             String[] values = entry.getValue();
+             for (String value : values){
+                 try {
+                    String encodedValue = URLEncoder.encode(value, StandardCharsets.UTF_8.toString());
+                     apiURL.append(key).append("=").append(encodedValue).append("&");
+                 } catch (IOException e) {
+                    LOGGER.error("Error encoding parameter value: {}", e.getMessage());
+                 }
+             }
+         }
         // Append parameters to API URL
         parameters.forEach((key, values) -> {
             for (String value : values) {
@@ -136,93 +148,3 @@ public class JsonDataDropdownServlet extends SlingSafeMethodsServlet {
         response.getWriter().write(dropdownOptions.toString());
     }
 }
-By using this servlet trying to hit external API and and storing inside aem dilog node but it is giving an error saying JSON data path not provided see below dilog
-<?xml version="1.0" encoding="UTF-8"?>
-<jcr:root xmlns:jcr="http://www.jcp.org/jcr/1.0" xmlns:nt="http://www.jcp.org/jcr/nt/1.0" xmlns:granite="http://www.adobe.com/jcr/granite/1.0" xmlns:sling="http://sling.apache.org/jcr/sling/1.0"
-    jcr:primaryType="nt:unstructured">
-    <items jcr:primaryType="nt:unstructured">
-        <fundPerformance
-            granite:class="cq-dialog-checkbox-showhide"
-            jcr:primaryType="nt:unstructured"
-            sling:resourceType="granite/ui/components/coral/foundation/form/checkbox"
-            fieldDescription="When checked, Retrieve API performance numbers from the funds and performance tool"
-            name="./fundPerformance"
-            text="Dynamic Fund Performance Values"
-            value="{Boolean}false">
-            <granite:data
-                jcr:primaryType="nt:unstructured"
-                cq-dialog-checkbox-showhide-target=".togglefield"/>
-        </fundPerformance>
-        <toggle
-            granite:class="togglefield"
-            jcr:primaryType="nt:unstructured"
-            sling:resourceType="granite/ui/components/coral/foundation/container">
-            <items jcr:primaryType="nt:unstructured">
-                <marketing
-                    jcr:primaryType="nt:unstructured"
-                    sling:resourceType="granite/ui/components/coral/foundation/form/select"
-                    fieldLabel="Marketing Name"
-                    name="./marketingName">
-                    <datasource
-                        jcr:primaryType="nt:unstructured"
-                        sling:resourceType="/cfs/jsonDataDropdown"
-                        jsonDataPath="cfs-winged/global/cards/fundsDialog/items/toggle/items/marketing/dropdown.json"/>
-                    <dropdown.json/>
-                </marketing>
-            </items>
-        </toggle>
-        <size
-            jcr:primaryType="nt:unstructured"
-            sling:resourceType="granite/ui/components/coral/foundation/form/select"
-            fieldLabel="Size"
-            name="./cardSize">
-            <items jcr:primaryType="nt:unstructured">
-                <default
-                    jcr:primaryType="nt:unstructured"
-                    text="Large"
-                    value="large"/>
-                <small
-                    jcr:primaryType="nt:unstructured"
-                    text="Small"
-                    value="small"/>
-            </items>
-        </size>
-        <heading
-            jcr:primaryType="nt:unstructured"
-            sling:resourceType="granite/ui/components/coral/foundation/form/textfield"
-            fieldDescription="Add the Main header for the card."
-            fieldLabel="Heading"
-            name="./heading"/>
-        <superHeading
-            jcr:primaryType="nt:unstructured"
-            sling:orderBefore="content"
-            sling:resourceType="granite/ui/components/coral/foundation/form/textfield"
-            fieldDescription="Add the Super header content for the card, for the 'Card - Fund' component."
-            fieldLabel="Super Heading"
-            name="./superHeading"/>
-        <headingLink
-            jcr:primaryType="nt:unstructured"
-            sling:resourceType="cq/gui/components/coral/common/form/pagefield"
-            fieldDescription="Add the Main header link if required, otherwise keep empty."
-            fieldLabel="Heading Link (Optional)"
-            name="./headingLink"
-            rootPath="/content"/>
-        <content
-            jcr:primaryType="nt:unstructured"
-            sling:resourceType="cq/gui/components/authoring/dialog/richtext"
-            fieldDescription="Add the body content of the card."
-            fieldLabel="Content"
-            name="./content"
-            useFixedInlineToolbar="{Boolean}true">
-            <rtePlugins
-                jcr:primaryType="nt:unstructured"
-                sling:resourceSuperType="/apps/cfs-winged/global/rtepluginConfig/rtePlugins"/>
-            <uiSettings
-                jcr:primaryType="nt:unstructured"
-                sling:resourceSuperType="/apps/cfs-winged/global/rtepluginConfig/uiSettings"/>
-        </content>
-    </items>
-</jcr:root>
-	/apps/cfs-winged/global/cards/fundsDialog/items/toggle/items/marketing/dropdown.json
-
-	java.lang.IllegalArgumentException: Illegal character in query at index 146: https://secure.colonialfirststate.com.au/fp/pricenperformance/products/funds/performance?companyCode=001&mainGroup=SF&productId=11&mintimeframe=At least 10 years&mintimeframe=At Least 3 years&mintimeframe=At least 5 years&mintimeframe=At least 7 years&mintimeframe=No minimum&category=Conservative&category=Defensive&category=Geared&category=Growth&category=High Growth&category=Moderate&category=Single sector option&asset=Alternatives&asset=Australian Property Securities&asset=Australian Share&asset=Cash and other income&asset=Fixed Interest&asset=Global Property Securities&asset=Global Share&asset=Infrastructure securities&asset=Multi-Sector&risk=1&risk=3&risk=4&risk=5&risk=6&risk=7&
