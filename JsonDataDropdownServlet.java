@@ -128,13 +128,14 @@ public class JsonDataDropdownServlet extends SlingSafeMethodsServlet {
             if (dropdownResource == null) {
                 Map<String, Object> properties = new HashMap<>();
                 properties.put("jcr:primaryType", "nt:file");
-                properties.put("jcr:mixinTypes", "mix:referenceable");
                 Resource fileResource = resourceResolver.create(parentResource, "dropdown.json", properties);
                 if (fileResource != null) {
                     // Create the jcr:content node
                     Map<String, Object> contentProperties = new HashMap<>();
                     contentProperties.put("jcr:primaryType", "nt:resource");
-                    contentProperties.put("jcr:data", apiResponse);
+                    properties.put("jcr:mixinTypes", "application/json");
+                    String jsonString = apiResponse.toString();
+                    contentProperties.put("jcr:data", jsonString);
                     resourceResolver.create(fileResource, "jcr:content", contentProperties);
                 }
             } else {
@@ -143,7 +144,8 @@ public class JsonDataDropdownServlet extends SlingSafeMethodsServlet {
                 if (contentResource != null) {
                     ModifiableValueMap valueMap = contentResource.adaptTo(ModifiableValueMap.class);
                     if (valueMap != null) {
-                        valueMap.put("jcr:data", apiResponse);
+                        String jsonString = apiResponse.toString();
+                        valueMap.put("jcr:data", jsonString);
                     }
                 }
             }
@@ -151,8 +153,7 @@ public class JsonDataDropdownServlet extends SlingSafeMethodsServlet {
             resourceResolver.commit();
         }
     }
-
-
+    
     private void populateDropdown(SlingHttpServletResponse response, JSONObject apiResponse) throws IOException, JSONException {
         JSONObject jsonObject = new JSONObject(apiResponse);
         Iterator<String> jsonKeys = jsonObject.keys();
