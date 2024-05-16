@@ -119,18 +119,38 @@ public class JsonDataDropdownServlet extends SlingSafeMethodsServlet {
         return null;
     }
 
-    private void writeToJSONFile(ResourceResolver resourceResolver, String jsonDataPath, String apiResponse) throws RepositoryException, PersistenceException {
-        Resource jsonResource = resourceResolver.getResource(jsonDataPath);
-        Node jsonNode = jsonResource.adaptTo(Node.class);
-
-        if (jsonNode != null) {
-            Node contentNode = jsonNode.getNode(JcrConstants.JCR_CONTENT);
-            if (contentNode != null) {
-                contentNode.setProperty("jcr:data", apiResponse);
-                resourceResolver.commit();
+private void writeToJSONFile(ResourceResolver resourceResolver, String jsonDataPath, String apiResponse) throws RepositoryException, PersistenceException {
+    // Get the parent resource of the dropdown.json path
+    Resource parentResource = resourceResolver.getResource(jsonDataPath).getParent();
+    if (parentResource != null) {
+        // Get or create the dropdown.json node
+        Resource dropdownResource = parentResource.getChild("dropdown.json");
+        if (dropdownResource == null) {
+            Map<String, Object> properties = new HashMap<>();
+            properties.put("jcr:primaryType", "nt:file");
+            properties.put("jcr:mixinTypes", "mix:referenceable");
+            Resource fileResource = resourceResolver.create(parentResource, "dropdown.json", properties);
+            if (fileResource != null) {
+                // Create the jcr:content node
+                Map<String, Object> contentProperties = new HashMap<>();
+                contentProperties.put("jcr:primaryType", "nt:resource");
+                contentProperties.put("jcr:data", apiResponse);
+                resourceResolver.create(fileResource, "jcr:content", contentProperties);
+            }
+        } else {
+            // Update the existing dropdown.json node
+            Resource contentResource = dropdownResource.getChild("jcr:content");
+            if (contentResource != null) {
+                ModifiableValueMap valueMap = contentResource.adaptTo(ModifiableValueMap.class);
+                if (valueMap != null) {
+                    valueMap.put("jcr:data", apiResponse);
+                }
             }
         }
+        // Commit the changes
+        resourceResolver.commit();
     }
+}
 
     private void populateDropdown(SlingHttpServletResponse response, String apiResponse) throws IOException, JSONException {
         JSONObject jsonObject = new JSONObject(apiResponse);
