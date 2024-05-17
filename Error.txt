@@ -1,42 +1,35 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<jcr:root xmlns:jcr="http://www.jcp.org/jcr/1.0"
-          xmlns:nt="http://www.jcp.org/jcr/nt/1.0"
-          xmlns:cq="http://www.day.com/jcr/cq/1.0"
-          xmlns:sling="http://sling.apache.org/jcr/sling/1.0"
-          jcr:primaryType="nt:unstructured"
-          jcr:title="Funds &amp; performance values"
-          sling:resourceType="cq/gui/components/authoring/dialog"
-          extraClientLibs="[your-project.fund-dialog]">
-    <content
-        jcr:primaryType="nt:unstructured"
-        sling:resourceType="granite/ui/components/coral/foundation/fixedcolumns">
-        <items jcr:primaryType="nt:unstructured">
-            <column
-                jcr:primaryType="nt:unstructured"
-                sling:resourceType="granite/ui/components/coral/foundation/container">
-                <items jcr:primaryType="nt:unstructured">
-                    <apir
-                        jcr:primaryType="nt:unstructured"
-                        sling:resourceType="granite/ui/components/coral/foundation/form/select"
-                        fieldLabel="APiR"
-                        name="./apir"
-                        required="{Boolean}true">
-                        <datasource
-                            jcr:primaryType="nt:unstructured"
-                            sling:resourceType="/bin/jsonDataDropdown"
-                            jsonDataPath="cfs-winged/global/cards/fundsDialog/items/toggle/items/marketing/dropdown.json"/>
-                    </apir>
-                    <marketingName
-                        jcr:primaryType="nt:unstructured"
-                        sling:resourceType="granite/ui/components/coral/foundation/form/textfield"
-                        fieldLabel="Marketing Name"
-                        name="./marketingName"
-                        readonly="{Boolean}true"/>
-                </items>
-            </column>
-        </items>
-    </content>
-</jcr:root>
+(function(document, $) {
+    'use strict';
+
+    $(document).on('foundation-contentloaded', function(e) {
+        var $apirField = $('[name="./apir"]');
+        var $marketingNameField = $('[name="./marketingName"]');
+
+        // Load JSON data from the specified path
+        $.getJSON('/bin/jsonDataDropdown', function(data) {
+            // Populate APiR values into the dropdown
+            for (var apir in data) {
+                if (data.hasOwnProperty(apir)) {
+                    var option = $('<option>', { value: apir, text: apir });
+                    $apirField.append(option);
+                }
+            }
+
+            // Create a mapping from APiR to marketingName
+            var apirMapping = data;
+
+            // Populate marketing name based on selected APiR
+            $apirField.on('change', function() {
+                var selectedApir = $(this).val();
+                var marketingName = apirMapping[selectedApir] || '';
+                $marketingNameField.val(marketingName);
+            });
+        }).fail(function(jqXHR, textStatus, errorThrown) {
+            console.error('Failed to load JSON data:', textStatus, errorThrown);
+        });
+    });
+})(document, Granite.$);
+
 ---------------------------------------------
 (function(document, $) {
     'use strict';
