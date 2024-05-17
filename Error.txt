@@ -155,5 +155,43 @@ $(document).ready(function() {
         });
     });
 })(document, Granite.$);
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>.
+(function(document, $) {
+    'use strict';
+
+    $(document).on('foundation-contentloaded', function(e) {
+        var $apirField = $('[name="./apir"]');
+        var $marketingNameField = $('[name="./marketingName"]');
+
+        // Load JSON data from the specified path
+        $.getJSON('/cfs-winged/components/content/dynamiccardfund/cq:dialog/content/items/column/items/apir/dropdown.jso', function(data) {
+            // Check if data is an array
+            if (Array.isArray(data)) {
+                // Populate APiR values into the dropdown
+                data.forEach(function(item) {
+                    var option = $('<option>', { value: item.apir, text: item.apir });
+                    $apirField.append(option);
+                });
+
+                // Create a mapping from APiR to marketingName
+                var apirMapping = {};
+                data.forEach(function(item) {
+                    apirMapping[item.apir] = item.marketingName;
+                });
+
+                // Populate marketing name based on selected APiR
+                $apirField.on('change', function() {
+                    var selectedApir = $(this).val();
+                    var marketingName = apirMapping[selectedApir] || '';
+                    $marketingNameField.val(marketingName);
+                });
+            } else {
+                console.error('JSON data is not an array:', data);
+            }
+        }).fail(function(jqXHR, textStatus, errorThrown) {
+            console.error('Failed to load JSON data:', textStatus, errorThrown);
+        });
+    });
+})(document, Granite.$);
 
 
