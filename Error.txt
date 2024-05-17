@@ -1,3 +1,21 @@
+$(document).ready(function() {
+    // Fetch JSON data from the specified endpoint
+    $.getJSON('/apps/cfs-winged/components/content/dynamiccardfund/cq:dialog/content/items/column/items/apir/dropdown.json', function(data) {
+        var dropdown = $('#apirDropdown'); // Assuming the dropdown has an ID of 'apirDropdown'
+        $.each(data.fundPerformance, function(index, fund) {
+            dropdown.append($('<option>').text(fund.apir).attr('value', fund.marketingName));
+        });
+    });
+
+    // Event listener for dropdown change
+    $('#apirDropdown').change(function() {
+        var selectedAPIR = $(this).val();
+        var selectedMarketingName = $(this).find('option:selected').attr('value');
+        $('#marketingName').val(selectedMarketingName); // Assuming the marketingName field has an ID of 'marketingName'
+    });
+});
+
+......................................................
 (function(document, $) {
     'use strict';
 
