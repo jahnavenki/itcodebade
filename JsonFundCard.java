@@ -1,4 +1,4 @@
-package au.com.cfs.winged.core.servlets;
+package au.com.cfs.winged.servlets;
 
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpStatus;
@@ -9,10 +9,7 @@ import org.apache.http.impl.client.HttpClients;
 import org.apache.http.util.EntityUtils;
 import org.apache.sling.api.SlingHttpServletRequest;
 import org.apache.sling.api.SlingHttpServletResponse;
-import org.apache.sling.api.resource.ModifiableValueMap;
-import org.apache.sling.api.resource.PersistenceException;
-import org.apache.sling.api.resource.Resource;
-import org.apache.sling.api.resource.ResourceResolver;
+import org.apache.sling.api.resource.*;
 import org.apache.sling.api.servlets.HttpConstants;
 import org.apache.sling.api.servlets.SlingSafeMethodsServlet;
 import org.json.JSONException;
@@ -29,7 +26,6 @@ import java.io.PrintWriter;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -61,7 +57,7 @@ public class JsonDataDropdownServlet extends SlingSafeMethodsServlet {
     protected void doGet(SlingHttpServletRequest request, SlingHttpServletResponse response) throws IOException {
         response.setContentType("application/json");
         PrintWriter out = response.getWriter();
-        LOGGER.error("Venkat. Printing out.");
+        LOGGER.error("Venkat.{}", out.toString());
         String jsonDataPath = getJsonDataPath(request);
         if (jsonDataPath == null) {
             LOGGER.error("JSON Data path is not provided.");
@@ -72,7 +68,7 @@ public class JsonDataDropdownServlet extends SlingSafeMethodsServlet {
             JSONObject apiResponse = callExternalAPI(BASE_API_URL, API_PARAMETERS);
             if (apiResponse != null) {
                 writeToJSONFile(request.getResourceResolver(), jsonDataPath, apiResponse);
-                populateDropdown(response, apiResponse);
+
             }
         } catch (IOException | RepositoryException | JSONException e) {
             LOGGER.error("Error: {}", e.getMessage());
@@ -80,28 +76,38 @@ public class JsonDataDropdownServlet extends SlingSafeMethodsServlet {
     }
 
     private String getJsonDataPath(SlingHttpServletRequest request) {
-        Resource pathResource = request.getResource();
-        Resource dataSourceResource = pathResource.getChild("datasource");
-        if (dataSourceResource != null) {
-            return dataSourceResource.getValueMap().get("jsonDataPath", String.class);
+        String jsonDataPath = null;
+        String apirPath = request.getRequestPathInfo().getResourcePath();
+        ResourceResolver resourceResolver = request.getResourceResolver();
+        Resource apirResource = resourceResolver.getResource(apirPath);
+        if (apirResource != null) {
+            Resource dataSourceResource = apirResource.getChild("datasource");
+            if (dataSourceResource != null) {
+                ValueMap valueMap = dataSourceResource.getValueMap();
+                jsonDataPath = valueMap.get("jsonDataPath", String.class);
+            } else {
+                LOGGER.error("Datasource resource not found at path : {}", apirPath);
+            }
+        } else {
+            LOGGER.error("Datasource parameter is missing : {}", apirPath);
         }
-        return null;
+        return jsonDataPath;
     }
 
     private JSONObject callExternalAPI(String baseUrl, Map<String, String[]> parameters) throws IOException, JSONException {
         StringBuilder apiURL = new StringBuilder(baseUrl + "?");
-         for (Map.Entry<String, String[]> entry : parameters.entrySet()){
-             String key = entry.getKey();
-             String[] values = entry.getValue();
-             for (String value : values){
-                 try {
+        for (Map.Entry<String, String[]> entry : parameters.entrySet()){
+            String key = entry.getKey();
+            String[] values = entry.getValue();
+            for (String value : values){
+                try {
                     String encodedValue = URLEncoder.encode(value, StandardCharsets.UTF_8.toString());
-                     apiURL.append(key).append("=").append(encodedValue).append("&");
-                 } catch (IOException e) {
+                    apiURL.append(key).append("=").append(encodedValue).append("&");
+                } catch (IOException e) {
                     LOGGER.error("Error encoding parameter value: {}", e.getMessage());
-                 }
-             }
-         }
+                }
+            }
+        }
 
         try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
             HttpGet httpGet = new HttpGet(apiURL.toString());
@@ -109,9 +115,10 @@ public class JsonDataDropdownServlet extends SlingSafeMethodsServlet {
                 if (apiResponse.getStatusLine().getStatusCode() == HttpStatus.SC_OK) {
                     HttpEntity entity = apiResponse.getEntity();
                     if (entity != null){
-                        String apiResponseString = EntityUtils.toString(entity);
-                        return new JSONObject(apiResponseString);
+                        String apiResponceString = EntityUtils.toString(entity);
+                        return new JSONObject(apiResponceString);
                     }
+
                 }
             }
         }
@@ -152,11 +159,6 @@ public class JsonDataDropdownServlet extends SlingSafeMethodsServlet {
             resourceResolver.commit();
         }
     }
-    
-    private void populateDropdown(SlingHttpServletResponse response, JSONObject apiResponse) throws IOException, JSONException {
-        // Directly write the API response to the response output stream
-        response.setContentType("application/json");
-        response.setCharacterEncoding("UTF-8");
-        apiResponse.write(response.getWriter());
-    }
+
+
 }
