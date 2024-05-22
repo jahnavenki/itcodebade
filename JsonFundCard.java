@@ -1,4 +1,4 @@
-package au.com.cfs.winged.servlets;
+package au.com.cfs.winged.core.servlets;
 
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpStatus;
@@ -9,9 +9,9 @@ import org.apache.http.impl.client.HttpClients;
 import org.apache.http.util.EntityUtils;
 import org.apache.sling.api.SlingHttpServletRequest;
 import org.apache.sling.api.SlingHttpServletResponse;
-import org.apache.sling.api.resource.*;
 import org.apache.sling.api.servlets.HttpConstants;
 import org.apache.sling.api.servlets.SlingSafeMethodsServlet;
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.osgi.framework.Constants;
@@ -19,31 +19,30 @@ import org.osgi.service.component.annotations.Component;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.jcr.RepositoryException;
 import javax.servlet.Servlet;
+import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
 @Component(service = Servlet.class,
-        property = {Constants.SERVICE_DESCRIPTION + "=Card Fund Servlet",
+        property = {
+                Constants.SERVICE_DESCRIPTION + "=Card Fund Servlet",
                 "sling.servlet.methods=" + HttpConstants.METHOD_GET,
-                "sling.servlet.paths="+ "/bin/jsonDataDropdown"})
+                "sling.servlet.paths=" + "/bin/jsonDataDropdown"
+        })
 public class JsonDataDropdownServlet extends SlingSafeMethodsServlet {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(JsonDataDropdownServlet.class);
 
-    // Constants for API parameters
     private static final String BASE_API_URL = "https://secure.colonialfirststate.com.au/fp/pricenperformance/products/funds/performance";
     private static final Map<String, String[]> API_PARAMETERS;
 
     static {
-        // Add more parameters as needed...
-        API_PARAMETERS = new LinkedHashMap<>(); // Use LinkedHashMap to preserve insertion order
+        API_PARAMETERS = new LinkedHashMap<>();
         API_PARAMETERS.put("companyCode", new String[]{"001"});
         API_PARAMETERS.put("mainGroup", new String[]{"SF"});
         API_PARAMETERS.put("productId", new String[]{"11"});
@@ -56,56 +55,34 @@ public class JsonDataDropdownServlet extends SlingSafeMethodsServlet {
     @Override
     protected void doGet(SlingHttpServletRequest request, SlingHttpServletResponse response) throws IOException {
         response.setContentType("application/json");
-        PrintWriter out = response.getWriter();
-        LOGGER.error("Venkat.{}", out.toString());
-        String jsonDataPath = getJsonDataPath(request);
-        if (jsonDataPath == null) {
-            LOGGER.error("JSON Data path is not provided.");
-            return;
-        }
+        response.setCharacterEncoding("UTF-8");
+
+        LOGGER.debug("Servlet invoked: /bin/jsonDataDropdown");
 
         try {
             JSONObject apiResponse = callExternalAPI(BASE_API_URL, API_PARAMETERS);
             if (apiResponse != null) {
-                writeToJSONFile(request.getResourceResolver(), jsonDataPath, apiResponse);
-
-            }
-        } catch (IOException | RepositoryException | JSONException e) {
-            LOGGER.error("Error: {}", e.getMessage());
-        }
-    }
-
-    private String getJsonDataPath(SlingHttpServletRequest request) {
-        String jsonDataPath = null;
-        String apirPath = request.getRequestPathInfo().getResourcePath();
-        ResourceResolver resourceResolver = request.getResourceResolver();
-        Resource apirResource = resourceResolver.getResource(apirPath);
-        if (apirResource != null) {
-            Resource dataSourceResource = apirResource.getChild("datasource");
-            if (dataSourceResource != null) {
-                ValueMap valueMap = dataSourceResource.getValueMap();
-                jsonDataPath = valueMap.get("jsonDataPath", String.class);
+                writeToResponse(response, apiResponse);
             } else {
-                LOGGER.error("Datasource resource not found at path : {}", apirPath);
+                LOGGER.error("API response is null.");
+                response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+                response.getWriter().write("{\"error\": \"API response is null\"}");
             }
-        } else {
-            LOGGER.error("Datasource parameter is missing : {}", apirPath);
+        } catch (IOException | JSONException e) {
+            LOGGER.error("Error: {}", e.getMessage());
+            response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+            response.getWriter().write("{\"error\": \"" + e.getMessage() + "\"}");
         }
-        return jsonDataPath;
     }
 
     private JSONObject callExternalAPI(String baseUrl, Map<String, String[]> parameters) throws IOException, JSONException {
         StringBuilder apiURL = new StringBuilder(baseUrl + "?");
-        for (Map.Entry<String, String[]> entry : parameters.entrySet()){
+        for (Map.Entry<String, String[]> entry : parameters.entrySet()) {
             String key = entry.getKey();
             String[] values = entry.getValue();
-            for (String value : values){
-                try {
-                    String encodedValue = URLEncoder.encode(value, StandardCharsets.UTF_8.toString());
-                    apiURL.append(key).append("=").append(encodedValue).append("&");
-                } catch (IOException e) {
-                    LOGGER.error("Error encoding parameter value: {}", e.getMessage());
-                }
+            for (String value : values) {
+                String encodedValue = URLEncoder.encode(value, StandardCharsets.UTF_8.toString());
+                apiURL.append(key).append("=").append(encodedValue).append("&");
             }
         }
 
@@ -114,51 +91,20 @@ public class JsonDataDropdownServlet extends SlingSafeMethodsServlet {
             try (CloseableHttpResponse apiResponse = httpClient.execute(httpGet)) {
                 if (apiResponse.getStatusLine().getStatusCode() == HttpStatus.SC_OK) {
                     HttpEntity entity = apiResponse.getEntity();
-                    if (entity != null){
-                        String apiResponceString = EntityUtils.toString(entity);
-                        return new JSONObject(apiResponceString);
+                    if (entity != null) {
+                        String apiResponseString = EntityUtils.toString(entity);
+                        return new JSONObject(apiResponseString);
                     }
-
+                } else {
+                    LOGGER.error("API response status: {}", apiResponse.getStatusLine().getStatusCode());
                 }
             }
         }
         return null;
     }
 
-    private void writeToJSONFile(ResourceResolver resourceResolver, String jsonDataPath, JSONObject apiResponse) throws RepositoryException, PersistenceException {
-        // Get the parent resource of the dropdown.json path
-        Resource parentResource = resourceResolver.getResource(jsonDataPath).getParent();
-        if (parentResource != null) {
-            // Get or create the dropdown.json node
-            Resource dropdownResource = parentResource.getChild("dropdown.json");
-            if (dropdownResource == null) {
-                Map<String, Object> properties = new HashMap<>();
-                properties.put("jcr:primaryType", "nt:file");
-                Resource fileResource = resourceResolver.create(parentResource, "dropdown.json", properties);
-                if (fileResource != null) {
-                    // Create the jcr:content node
-                    Map<String, Object> contentProperties = new HashMap<>();
-                    contentProperties.put("jcr:primaryType", "nt:resource");
-                    properties.put("jcr:mixinTypes", "application/json");
-                    String jsonString = apiResponse.toString();
-                    contentProperties.put("jcr:data", jsonString);
-                    resourceResolver.create(fileResource, "jcr:content", contentProperties);
-                }
-            } else {
-                // Update the existing dropdown.json node
-                Resource contentResource = dropdownResource.getChild("jcr:content");
-                if (contentResource != null) {
-                    ModifiableValueMap valueMap = contentResource.adaptTo(ModifiableValueMap.class);
-                    if (valueMap != null) {
-                        String jsonString = apiResponse.toString();
-                        valueMap.put("jcr:data", jsonString);
-                    }
-                }
-            }
-            // Commit the changes
-            resourceResolver.commit();
-        }
+    private void writeToResponse(SlingHttpServletResponse response, JSONObject apiResponse) throws IOException {
+        PrintWriter out = response.getWriter();
+        out.print(apiResponse.toString());
     }
-
-
 }
