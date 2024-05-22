@@ -1,4 +1,4 @@
-package au.com.cfs.winged.core.servlets;
+package au.com.cfs.winged.servlets;
 
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpStatus;
@@ -90,18 +90,18 @@ public class JsonDataDropdownServlet extends SlingSafeMethodsServlet {
 
     private JSONObject callExternalAPI(String baseUrl, Map<String, String[]> parameters) throws IOException, JSONException {
         StringBuilder apiURL = new StringBuilder(baseUrl + "?");
-         for (Map.Entry<String, String[]> entry : parameters.entrySet()){
-             String key = entry.getKey();
-             String[] values = entry.getValue();
-             for (String value : values){
-                 try {
+        for (Map.Entry<String, String[]> entry : parameters.entrySet()){
+            String key = entry.getKey();
+            String[] values = entry.getValue();
+            for (String value : values){
+                try {
                     String encodedValue = URLEncoder.encode(value, StandardCharsets.UTF_8.toString());
-                     apiURL.append(key).append("=").append(encodedValue).append("&");
-                 } catch (IOException e) {
+                    apiURL.append(key).append("=").append(encodedValue).append("&");
+                } catch (IOException e) {
                     LOGGER.error("Error encoding parameter value: {}", e.getMessage());
-                 }
-             }
-         }
+                }
+            }
+        }
 
         try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
             HttpGet httpGet = new HttpGet(apiURL.toString());
@@ -153,7 +153,7 @@ public class JsonDataDropdownServlet extends SlingSafeMethodsServlet {
             resourceResolver.commit();
         }
     }
-    
+
     private void populateDropdown(SlingHttpServletResponse response, JSONObject apiResponse) throws IOException, JSONException {
         JSONObject jsonObject = new JSONObject(apiResponse);
         Iterator<String> jsonKeys = jsonObject.keys();
