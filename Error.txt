@@ -2,35 +2,35 @@ $(document).on('dialog-ready', function() {
     var dropdown = $('#apirDropdown');
     var marketingNameField = $('#marketingNameField');
 
+    console.debug('Dialog ready. Fetching dropdown data from /bin/jsonDataDropdown');
+
     // Fetch data from the servlet and populate dropdown
     $.ajax({
         url: '/bin/jsonDataDropdown',
         type: 'GET',
         dataType: 'json',
         success: function(data) {
+            console.debug('Received data from servlet:', data);
+
             dropdown.empty(); // Clear existing options
             dropdown.append($('<option></option>').attr('value', '').text('Select APiR')); // Default option
 
-            $.each(data, function(key, value) {
-                dropdown.append($('<option></option>').attr('value', key).text(key));
-            });
+            if (data && data.fundPerformance) {
+                $.each(data.fundPerformance, function(index, fund) {
+                    console.debug('Adding option:', fund.apir, fund.marketingName);
+                    dropdown.append($('<option></option>').attr('value', fund.apir).text(fund.apir)); // Add APiR value to the dropdown
+                });
+            } else {
+                console.error('No fund performance data found in response.');
+            }
 
             // Set the initial marketing name if the dropdown already has a value
-            setMarketingName(dropdown.val(), data);
+            var initialValue = dropdown.val();
+            console.debug('Initial dropdown value:', initialValue);
+            setMarketingName(initialValue, data);
         },
         error: function(xhr, status, error) {
-            console.error('Failed to fetch dropdown data:', error);
+            console.error('Failed to fetch dropdown data:', status, error);
+            console.debug('Response status:', xhr.status);
         }
     });
-
-    // Update marketing name when dropdown value changes
-    dropdown.on('change', function() {
-        var selectedValue = dropdown.val();
-        setMarketingName(selectedValue, data);
-    });
-
-    function setMarketingName(apir, data) {
-        var marketingName = data[apir] || '';
-        marketingNameField.val(marketingName);
-    }
-});
