@@ -1,207 +1,36 @@
-$(document).ready(function() {
-    // Fetch JSON data from the specified endpoint
-    $.getJSON('/apps/cfs-winged/components/content/dynamiccardfund/cq:dialog/content/items/column/items/apir/dropdown.json', function(data) {
-        var dropdown = $('#apirDropdown'); // Assuming the dropdown has an ID of 'apirDropdown'
-        $.each(data.fundPerformance, function(index, fund) {
-            dropdown.append($('<option>').text(fund.apir).attr('value', fund.marketingName));
-        });
-    });
+$(document).on('dialog-ready', function() {
+    var dropdown = $('#apirDropdown');
+    var marketingNameField = $('#marketingNameField');
 
-    // Event listener for dropdown change
-    $('#apirDropdown').change(function() {
-        var selectedAPIR = $(this).val();
-        var selectedMarketingName = $(this).find('option:selected').attr('value');
-        $('#marketingName').val(selectedMarketingName); // Assuming the marketingName field has an ID of 'marketingName'
-    });
-});
+    // Fetch data from the servlet and populate dropdown
+    $.ajax({
+        url: '/bin/jsonDataDropdown',
+        type: 'GET',
+        dataType: 'json',
+        success: function(data) {
+            dropdown.empty(); // Clear existing options
+            dropdown.append($('<option></option>').attr('value', '').text('Select APiR')); // Default option
 
-......................................................
-(function(document, $) {
-    'use strict';
-
-    $(document).on('foundation-contentloaded', function(e) {
-        var $apirField = $('[name="./apir"]');
-        var $marketingNameField = $('[name="./marketingName"]');
-
-        // Load JSON data from the specified path
-        $.getJSON('/bin/jsonDataDropdown', function(data) {
-            // Populate APiR values into the dropdown
-            for (var apir in data) {
-                if (data.hasOwnProperty(apir)) {
-                    var option = $('<option>', { value: apir, text: apir });
-                    $apirField.append(option);
-                }
-            }
-
-            // Create a mapping from APiR to marketingName
-            var apirMapping = data;
-
-            // Populate marketing name based on selected APiR
-            $apirField.on('change', function() {
-                var selectedApir = $(this).val();
-                var marketingName = apirMapping[selectedApir] || '';
-                $marketingNameField.val(marketingName);
+            $.each(data, function(key, value) {
+                dropdown.append($('<option></option>').attr('value', key).text(key));
             });
-        }).fail(function(jqXHR, textStatus, errorThrown) {
-            console.error('Failed to load JSON data:', textStatus, errorThrown);
-        });
-    });
-})(document, Granite.$);
 
----------------------------------------------
-(function(document, $) {
-    'use strict';
-
-    $(document).on('foundation-contentloaded', function(e) {
-        var $apirField = $('[name="./apir"]');
-        var $marketingNameField = $('[name="./marketingName"]');
-
-        // Function to update marketing name based on APiR selection
-        function updateMarketingName() {
-            var selectedApir = $apirField.val();
-            var marketingData = $apirField.data('marketing'); // Get stored marketing data
-
-            if (marketingData && marketingData[selectedApir]) {
-                $marketingNameField.val(marketingData[selectedApir]);
-            } else {
-                $marketingNameField.val('');
-            }
+            // Set the initial marketing name if the dropdown already has a value
+            setMarketingName(dropdown.val(), data);
+        },
+        error: function(xhr, status, error) {
+            console.error('Failed to fetch dropdown data:', error);
         }
-
-        // Attach change event listener to the APiR select field
-        $apirField.on('change', function() {
-            updateMarketingName();
-        });
-
-        // Load data from datasource and store it in a data attribute
-        $.getJSON('/bin/jsonDataDropdown', function(data) {
-            $apirField.data('marketing', data);
-            // Trigger change event to set the initial value
-            updateMarketingName();
-        });
     });
-})(document, Granite.$);
------------------------------------------
-<jcr:root xmlns:sling="http://sling.apache.org/jcr/sling/1.0" xmlns:jcr="http://www.jcp.org/jcr/1.0"
-          jcr:primaryType="cq:ClientLibraryFolder"
-          categories="[your-project.fund-dialog]"
-          dependencies="[cq.jquery]"/>
-//////////////////////////////////////////////////
-(function(document, $) {
-    'use strict';
 
-    $(document).on('foundation-contentloaded', function(e) {
-        var $apirField = $('[name="./apir"]');
-        var $marketingNameField = $('[name="./marketingName"]');
-
-        // Load JSON data from the specified path
-        $.getJSON('/content/dam/cfs-winged/global/cards/fundsDialog/items/toggle/items/marketing/dropdown.json', function(data) {
-            // Populate APiR values into the dropdown
-            data.forEach(function(item) {
-                var option = $('<option>', { value: item.apir, text: item.apir });
-                $apirField.append(option);
-            });
-
-            // Create a mapping from APiR to marketingName
-            var apirMapping = {};
-            data.forEach(function(item) {
-                apirMapping[item.apir] = item.marketingName;
-            });
-
-            // Populate marketing name based on selected APiR
-            $apirField.on('change', function() {
-                var selectedApir = $(this).val();
-                var marketingName = apirMapping[selectedApir] || '';
-                $marketingNameField.val(marketingName);
-            });
-        });
+    // Update marketing name when dropdown value changes
+    dropdown.on('change', function() {
+        var selectedValue = dropdown.val();
+        setMarketingName(selectedValue, data);
     });
-})(document, Granite.$);
-.....................................................
-(function(document, $) {
-    'use strict';
 
-    $(document).on('foundation-contentloaded', function(e) {
-        var $apirField = $('[name="./apir"]');
-        var $marketingNameField = $('[name="./marketingName"]');
-
-        // Load JSON data from the specified path
-        $.getJSON('/content/dam/cfs-winged/global/cards/fundsDialog/items/toggle/items/marketing/dropdown.json', function(data) {
-            // Check if data is an array
-            if (Array.isArray(data)) {
-                // Populate APiR values into the dropdown
-                data.forEach(function(item) {
-                    var option = $('<option>', { value: item.apir, text: item.apir });
-                    $apirField.append(option);
-                });
-
-                // Create a mapping from APiR to marketingName
-                var apirMapping = {};
-                data.forEach(function(item) {
-                    apirMapping[item.apir] = item.marketingName;
-                });
-
-                // Populate marketing name based on selected APiR
-                $apirField.on('change', function() {
-                    var selectedApir = $(this).val();
-                    var marketingName = apirMapping[selectedApir] || '';
-                    $marketingNameField.val(marketingName);
-                });
-            } else {
-                console.error('JSON data is not an array:', data);
-            }
-        }).fail(function(jqXHR, textStatus, errorThrown) {
-            console.error('Failed to load JSON data:', textStatus, errorThrown);
-        });
-    });
-})(document, Granite.$);
->>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>.
-(function(document, $) {
-    'use strict';
-
-    $(document).on('foundation-contentloaded', function(e) {
-        var $apirField = $('[name="./apir"]');
-        var $marketingNameField = $('[name="./marketingName"]');
-
-        // Load JSON data from the specified path
-        $.getJSON('/cfs-winged/components/content/dynamiccardfund/cq:dialog/content/items/column/items/apir/dropdown.jso', function(data) {
-            // Check if data is an array
-            if (Array.isArray(data)) {
-                // Populate APiR values into the dropdown
-                data.forEach(function(item) {
-                    var option = $('<option>', { value: item.apir, text: item.apir });
-                    $apirField.append(option);
-                });
-
-                // Create a mapping from APiR to marketingName
-                var apirMapping = {};
-                data.forEach(function(item) {
-                    apirMapping[item.apir] = item.marketingName;
-                });
-
-                // Populate marketing name based on selected APiR
-                $apirField.on('change', function() {
-                    var selectedApir = $(this).val();
-                    var marketingName = apirMapping[selectedApir] || '';
-                    $marketingNameField.val(marketingName);
-                });
-            } else {
-                console.error('JSON data is not an array:', data);
-            }
-        }).fail(function(jqXHR, textStatus, errorThrown) {
-            console.error('Failed to load JSON data:', textStatus, errorThrown);
-        });
-    });
-})(document, Granite.$);
-
-21.05.2024 23:15:44.109 *INFO* [[0:0:0:0:0:0:0:1] [1716297344094] GET /mnt/override/apps/cfs-winged/components/content/dynamiccardfund/_cq_dialog.html/content/cfs-winged/au/en/super/jcr:content/root/responsivegrid/container/dynamiccardfund HTTP/1.1] com.day.cq.wcm.core.impl.designer.SearchPathLimiter Search path limiter configured with searchPathLimiterFeatureToggleOn: true and searchPathThreshold: true. 
-21.05.2024 23:15:44.109 *ERROR* [[0:0:0:0:0:0:0:1] [1716297344094] GET /mnt/override/apps/cfs-winged/components/content/dynamiccardfund/_cq_dialog.html/content/cfs-winged/au/en/super/jcr:content/root/responsivegrid/container/dynamiccardfund HTTP/1.1] au.com.cfs.winged.servlets.JsonDataDropdownServlet Venkat.java.io.PrintWriter@3bbe4e55
-21.05.2024 23:15:44.406 *WARN* [[0:0:0:0:0:0:0:1] [1716297344094] GET /mnt/override/apps/cfs-winged/components/content/dynamiccardfund/_cq_dialog.html/content/cfs-winged/au/en/super/jcr:content/root/responsivegrid/container/dynamiccardfund HTTP/1.1] org.apache.http.client.protocol.ResponseProcessCookies Invalid cookie header: "Set-Cookie: _abck=A55835ED982B4D9A418A637D00B59572~-1~YAAQOk5haMPDcZSPAQAAoSVLmwu0B/08sM0dnlBu1ZPd7CFkzhf7jfi5w/FDD9s4+q+3lBxHIQfDfHkmO0RC3Ado06bDk9FFNjtf1Qfx8lnR4ZPBYT15BSG5jCromq5AyNuB1fdsvYrpwlPUEdlQnePHjRjqBQwUfXzPGgxwuYAIcK7pSLxO4o99lqOrA8mgsgq3/c9YCko0/AFVU1n73dLHpsXoRd7ZQ4DsQqUFNVAlEn5MxvSS5YrAPyxXIAletoVuzJBNwQ/mEuAKmN/3djX19+Y+/fmwbNCWkZPWZxH+jvfvFn2jnxWiYqxQhANa/XgmQne4WJHrAQZ5i8frqhUB5d43jtIyzFvn2elv/vddQbYNMlGm5mp7TIM8yzH93NNgQd+zCPwOXw==~-1~-1~-1; Domain=.colonialfirststate.com.au; Path=/; Expires=Wed, 21 May 2025 13:15:44 GMT; Max-Age=31536000; Secure". Invalid 'expires' attribute: Wed, 21 May 2025 13:15:44 GMT
-21.05.2024 23:15:44.422 *WARN* [[0:0:0:0:0:0:0:1] [1716297344094] GET /mnt/override/apps/cfs-winged/components/content/dynamiccardfund/_cq_dialog.html/content/cfs-winged/au/en/super/jcr:content/root/responsivegrid/container/dynamiccardfund HTTP/1.1] org.apache.http.client.protocol.ResponseProcessCookies Invalid cookie header: "Set-Cookie: bm_sz=9BBF4507ABFA69C845FF3D615782248F~YAAQOk5haMTDcZSPAQAAoSVLmxfn3sP455BpphkMcaGJi0xjN8YemDgzNtxMrOtOvpNXaX637gYMpaOErVWmm/YE5BwnMlmJODkoGbEi/Ek1Krlm5DGH15ljAXu5FiggqcgFJwbJKuJD+8B/luvDxOR9O9avzv2ul73CxJ2R/xc+dftjYMfK9X72wmsRGtUQi1+xFIio4+HJsQQq6jtPJOtBU3D3ctZ64wDIsxIBDjgClnVyVtjPmf3Gf2QTIJY7f3mNQcDLtint1nmjonBkYjZzNODSrqWLGm4Jvh8zLF2RM7LItAKXVjUHOc3tkaX1bn2k1q9PGyi4xUT9W7dgAjzyq8mOYVXLuXTEucMN65JN1EGrHc5tdK88GQ5c~4408118~4535092; Domain=.colonialfirststate.com.au; Path=/; Expires=Tue, 21 May 2024 17:15:44 GMT; Max-Age=14400". Invalid 'expires' attribute: Tue, 21 May 2024 17:15:44 GMT
-21.05.2024 23:15:44.422 *WARN* [[0:0:0:0:0:0:0:1] [1716297344094] GET /mnt/override/apps/cfs-winged/components/content/dynamiccardfund/_cq_dialog.html/content/cfs-winged/au/en/super/jcr:content/root/responsivegrid/container/dynamiccardfund HTTP/1.1] org.apache.jackrabbit.oak.jcr.session.NodeImpl String length: 167152 for property: jcr:data at Node: /apps/cfs-winged/components/content/dynamiccardfund/cq:dialog/content/items/column/items/apir/dropdown.json/jcr:content is greater than configured value 102400
-
-<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-17.05.2024 13:45:50.078 *INFO* [[0:0:0:0:0:0:0:1] [1715917550075] GET /mnt/override/apps/cfs-winged/components/content/dynamiccardfund/_cq_dialog.html/content/cfs-winged/au/en/super/jcr:content/root/responsivegrid/container/dynamiccardfund HTTP/1.1] com.day.cq.wcm.core.impl.designer.SearchPathLimiter Search path limiter configured with searchPathLimiterFeatureToggleOn: true and searchPathThreshold: true. 
-17.05.2024 13:45:50.094 *ERROR* [[0:0:0:0:0:0:0:1] [1715917550075] GET /mnt/override/apps/cfs-winged/components/content/dynamiccardfund/_cq_dialog.html/content/cfs-winged/au/en/super/jcr:content/root/responsivegrid/container/dynamiccardfund HTTP/1.1] au.com.cfs.winged.core.servlets.JsonDataDropdownServlet Venkat.java.io.PrintWriter@51f0afff
-17.05.2024 13:45:50.413 *WARN* [[0:0:0:0:0:0:0:1] [1715917550075] GET /mnt/override/apps/cfs-winged/components/content/dynamiccardfund/_cq_dialog.html/content/cfs-winged/au/en/super/jcr:content/root/responsivegrid/container/dynamiccardfund HTTP/1.1] org.apache.http.client.protocol.ResponseProcessCookies Invalid cookie header: "Set-Cookie: _abck=858A1E6A8B1E19B1EF10DA36517C6396~-1~YAAQOk5haA9P/IOPAQAAQ/OnhAu2kt70OY39yKCzk8Y5IUlpjsXDJ1SZG6dfrT/X3aq1in33aaqu6v3MDCIMEggkWdwCyRs4iJXxZj95APID+wzl0V14xrlqgafGHZAuUJ2aSD9kq9tC8U1jNx/49ucEs1/tWs47sJN/iq8XYyJ2IvTN16s/jK4LBfYejsr5/JeYYZQGFL3rTec9ElDwiCfQEH7agAu8fukUvZ2ZgtKSoHy4fivNpTh9aZ1Jnm2ajv/O0TQlb5SW+CQsPS0QWEtmWgAhlxbNkt6bBrJ4aqgTDfUrPx1bjkr4U8Ri6RdeuRI9mYGyK51DAMgpyKl1HxgikkrU/Ul50WyVo2O6ARev9Ssp1QRrDp3qs/B1Uq4Xbt6S1wKeKZDg9w==~-1~-1~-1; Domain=.colonialfirststate.com.au; Path=/; Expires=Sat, 17 May 2025 03:45:50 GMT; Max-Age=31536000; Secure". Invalid 'expires' attribute: Sat, 17 May 2025 03:45:50 GMT
-17.05.2024 13:45:50.413 *WARN* [[0:0:0:0:0:0:0:1] [1715917550075] GET /mnt/override/apps/cfs-winged/components/content/dynamiccardfund/_cq_dialog.html/content/cfs-winged/au/en/super/jcr:content/root/responsivegrid/container/dynamiccardfund HTTP/1.1] org.apache.http.client.protocol.ResponseProcessCookies Invalid cookie header: "Set-Cookie: bm_sz=03C6D7F1605F3D39BFB9A380015144A0~YAAQOk5haBBP/IOPAQAAQ/OnhBcGy7UuED+EMINntG3l/Fo83kHhsxIlzqz0EiinNQILRx5o9h/KleqDYG7UnF4YNb56ZMIhoc6QsGLN7jZrIoo6AyHgAQqRyt1bo8sX59I3PW+aqc4a9t8uzBtgjhp088X+flqB/eu8Wq/1+6KClYjlAItIekny1ozkJUQhJwHW2WWC7ww0M/YGSsPICjdDrdkmUyKUR02Tuh3tVqXPlCcvQqoxoUO7bWzzJWopXq9mzVIs/jAq0nRtQatOSKwxIV/+LWqOaNLZzDrluqPhNZdiZqKMhhRsDqXrEg+A1Ydqgf4jYXRkZzSwm3Csy3KV+vSOATvpk/8lUwgv7FOj6BVzoJNcTgJhjtPT~3748405~4342838; Domain=.colonialfirststate.com.au; Path=/; Expires=Fri, 17 May 2024 07:45:50 GMT; Max-Age=14400". Invalid 'expires' attribute: Fri, 17 May 2024 07:45:50 GMT
+    function setMarketingName(apir, data) {
+        var marketingName = data[apir] || '';
+        marketingNameField.val(marketingName);
+    }
+});
